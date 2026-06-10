@@ -25,7 +25,7 @@ try {
     Invoke-WebRequest -Uri $uri -Method Post -Body "none" -TimeoutSec 3 -ErrorAction Stop
     Write-Host "[?] Request finished without dropping the connection (This is unexpected, it might not have worked)." -ForegroundColor Yellow
 } catch {
-    Write-Host "[+] The connection was dropped! This means the table accepted the credentials and is rebooting its Wi-Fi chip to connect to DarkFiles." -ForegroundColor Green
+    Write-Host "[+] The connection was dropped! This means the table accepted the credentials and is rebooting its Wi-Fi chip to connect to your Wi-Fi network." -ForegroundColor Green
 }
 
 Write-Host "[!] Connector script finished." -ForegroundColor Cyan
