@@ -93,28 +93,66 @@ Once the table has rebooted and connected to your home router, reconnect your co
 
 ---
 
-## "Tricks" to Extract/Capture Active Cloud Auth Tokens
+## "Tricks" to Extract/Capture Active Cloud Auth Tokens & Codes
 
-If you don't want to enter your email and password on the JoeBro login page, you can sniff the Ayla Cloud authentication token directly from your smartphone while using the official Sobro app.
+To secure your login details, or if your Ayla account uses external login providers (like Facebook), you can bypass the standard email/password login form on the JoeBro PWA. The PWA includes a built-in interactive **Help & Instructions Guide** right on the login screen, supporting several authentication tricks:
 
-### Method 1: Using HTTP Toolkit (Desktop Proxy)
-1. Download [HTTP Toolkit](https://httptoolkit.com/).
-2. Run HTTP Toolkit on your computer.
-3. Configure your phone's Wi-Fi connection proxy settings to point to your computer's IP address and the HTTP Toolkit port (typically `8000`).
-4. Install the HTTP Toolkit SSL CA Certificate on your phone to inspect HTTPS.
-5. Open the official **Sobro** app on your phone.
-6. Look at the HTTP Toolkit requests logs. Search for traffic containing `aylanetworks.com`.
-7. Inspect the headers of any request to `https://ads-field.aylanetworks.com/apiv1/devices.json`.
-8. Locate the `Authorization` header. It will look like:
-   ```
-   Authorization: auth_token MC1_8f0e0d0c0b0a090807060504030201...
-   ```
-9. Copy the long token string (everything after `auth_token `).
-10. In JoeBro, click **Use Existing Auth Token**, paste the token, and click **Authenticate**.
+### Method 1: The Facebook Redirect URL Trick
+Because our custom client runs locally or on a different domain, it cannot automatically read the redirected URL from Facebook's authentication popup due to Cross-Origin Resource Sharing (CORS) rules.
+1. In the JoeBro login page, click **Login with Facebook**.
+2. This opens the Ayla Facebook OAuth page in a new browser tab (so the address bar is fully visible).
+3. Complete the login details on Facebook's page.
+4. Facebook will redirect you to a blank/expired page whose URL starts with:
+   `https://mobile.aylanetworks.com/?code=AUTHORIZATION_CODE`
+5. **Copy the entire URL** from the browser's address bar.
+6. Return to JoeBro, paste the URL into the **Facebook Code / Redirect URL** box, and click **Complete Login**. The PWA will automatically extract the code and complete the authentication.
 
-### Method 2: Mitmproxy (CLI Alternative)
-If you prefer command-line tools:
-1. Run `mitmproxy` or `mitmweb`.
-2. Configure your phone proxy to route through the mitmproxy instance.
-3. Filter requests with `~u aylanetworks`.
-4. Capture the `access_token` parameter from the JSON body of the response to `https://user-field.aylanetworks.com/users/sign_in.json`.
+### Method 2: Generate Token via API Command Line (CLI Trick)
+If you do not want to submit your password directly through the web UI, you can query Ayla's authentication server directly from your machine's terminal to receive the token.
+
+#### Windows (PowerShell):
+```powershell
+$body = @{
+    user = @{
+        email = 'YOUR_EMAIL'
+        password = 'YOUR_PASSWORD'
+        application = @{
+            app_id = 'sobro-ag-id'
+            app_secret = 'sobro-mDM8M4JEe7IJFwiKvbs956XqX_s'
+        }
+    }
+}
+$res = Invoke-RestMethod -Uri "https://user-field.aylanetworks.com/users/sign_in.json" -Method Post -Body ($body | ConvertTo-Json) -ContentType "application/json"
+$res.access_token
+```
+
+#### macOS / Linux / WSL (curl):
+```bash
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"user":{"email":"YOUR_EMAIL","password":"YOUR_PASSWORD","application":{"app_id":"sobro-ag-id","app_secret":"sobro-mDM8M4JEe7IJFwiKvbs956XqX_s"}}}' \
+  https://user-field.aylanetworks.com/users/sign_in.json | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$'
+```
+*Replace `YOUR_EMAIL` and `YOUR_PASSWORD` in the commands above. Run the command, copy the output token, click **Use Existing Auth Token** in the JoeBro PWA, paste it, and log in.*
+
+### Method 3: Browser DevTools Token Sniffing (No Tools Required)
+If you are already logged in to Ayla's official platform (like the developer dashboard or account management panel) on your browser:
+1. Press `F12` or right-click anywhere and select **Inspect** to open Browser Developer Tools.
+2. Navigate to the **Network** tab.
+3. Keep the DevTools open and refresh the page or perform an action (like loading your devices list).
+4. In the filter box, type `aylanetworks` or `devices.json`.
+5. Select any matching network request and look at the **Request Headers**.
+6. Find the `Authorization` header. It will look like:
+   `Authorization: auth_token MC1_8f0e0d0c...`
+7. Copy the entire token string following `auth_token ` (starting with `MC1_`).
+8. Paste this token into the **Ayla Auth Token** field in JoeBro's token login screen.
+
+### Method 4: Intercepting App Traffic (HTTP Toolkit / Mitmproxy)
+If you want to capture the token being used by the official Sobro mobile app on your phone:
+1. Run **HTTP Toolkit** on your computer.
+2. Set your smartphone's Wi-Fi proxy settings to route traffic through your computer's IP address and port `8000`.
+3. Install the HTTP Toolkit SSL CA Certificate on your phone.
+4. Launch the official **Sobro** app on your mobile device.
+5. In HTTP Toolkit, inspect requests containing `aylanetworks.com`.
+6. Inspect the headers of requests to `https://ads-field.aylanetworks.com/apiv1/devices.json`.
+7. Locate and copy the token following `Authorization: auth_token ` and input it into JoeBro's token login.
+

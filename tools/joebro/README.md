@@ -1,4 +1,4 @@
-# JoeBro Web Controller
+# JoeBro Web Controller (Sobro Smart Table Rescue App)
       _            ____             
      | | ___   ___| __ ) _ __ ___   
   _  | |/ _ \ / _ \  _ \| '__/ _ \  
@@ -7,7 +7,7 @@
 ```
 **Written by Joe B. The Blind Hacker**
 
-A completely standalone, client-side Progressive Web App (PWA) to control the JoeBro Smart Table (formerly Sobro) directly over the Ayla Networks Cloud API.
+A completely standalone, client-side Progressive Web App (PWA) to control the **Sobro Smart Table** directly over the Ayla Networks Cloud API, bypassing the broken and crashing **official Sobro mobile app**.
 
 ## Project Features
 - **Zero Backend**: Operates 100% in your browser. No Docker, no Python, no web servers required.
@@ -15,8 +15,10 @@ A completely standalone, client-side Progressive Web App (PWA) to control the Jo
 - **Mobile First**: Built with responsive CSS and touch-action protections for a flawless mobile experience.
 - **Hidden Features Unlocked**: Access to undocumented capabilities like forcing Bluetooth Pairing mode and fine-tuning backlight brightness.
 
-## Why this exists
-The official Android app often crashes on modern devices, rendering the table uncontrollable. Furthermore, the table's local LAN protocol requires AES encryption keys that are impossible to extract without the official app. This PWA bypasses the mobile app entirely by authenticating directly with the Ayla Cloud API to push commands to the table.
+## Why this exists: Solving the Sobro App Crash
+The **official Sobro App** has been abandoned and **crashes constantly** on modern Android and iOS devices, leaving table owners locked out of their mini-fridge cooling, drawer locks, and RGB backlighting. Because the table's local network communication protocol relies on proprietary device-specific AES encryption keys that are hard to sniff, direct local control is blocked. 
+
+This PWA acts as a replacement **Sobro app**, authenticating directly with the Ayla Cloud API to push commands to the table. Learn more about the reverse-engineering details on the [NextGenRedTeam Blog: Rescuing Abandoned IoT (Sobro Smart Coffee Table Rescue)](https://nextgenredteam.com/blog/rescuing-abandoned-iot-joebro-sobro.html).
 
 ## Network Requirements
 For the Sobro Table to communicate with the Ayla Cloud, it must be connected to a Wi-Fi network. The internal Wi-Fi chip is very old and strictly requires:
@@ -39,6 +41,13 @@ Because this app relies entirely on standard HTTP REST calls with CORS support, 
 1. Double-click `index.html` to open it in any modern web browser.
 2. Modify `app.js` and input your Ayla `APP_ID` and `APP_SECRET`.
 3. Host the directory on any basic web server, or simply open `index.html` locally in your browser.
+
+### Cloud and Facebook Authentication Bypasses (Tricks)
+Since browser security policies (CORS) block direct authentication requests to the Ayla API from some domains, or if you use Facebook to log in, you can bypass standard login using these methods (documented step-by-step in the PWA's built-in **Help Guide** on the login screen):
+
+- **Facebook Redirect Trick**: When using "Login with Facebook", the OAuth flow opens in a new browser tab. Complete the login, copy the full redirect URL (starting with `mobile.aylanetworks.com/?code=...`) from the address bar, and paste it back into the PWA to authenticate.
+- **CLI API Token Trick**: Run a simple PowerShell (Windows) or `curl` (macOS/Linux) command on your computer to log in directly via Ayla's authentication server API and print the active session token. You can then copy and paste this token into the PWA.
+- **DevTools Sniffing Trick**: Open browser developer tools (F12) on an active session in the Ayla dashboard, filter the **Network** tab for requests to `devices.json`, and extract the `Authorization: auth_token MC1_...` header string.
 
 ## Ayla Cloud API Architecture
 To bypass the broken Android app, the PWA communicates directly with the Ayla Cloud using the following REST endpoints:

@@ -389,13 +389,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const data = await res.json();
                 if (res.ok && data.url) {
-                    // Open Facebook OAuth page in popup window
-                    window.open(data.url, 'Facebook Login', 'width=600,height=600');
+                    // Open Facebook OAuth page in a new tab so the address bar is fully visible
+                    window.open(data.url, '_blank');
                     
                     // Switch UI view to Code Input
                     loginForm.style.display = 'none';
                     facebookCodeContainer.style.display = 'block';
-                    loginStatus.textContent = "OAuth window opened. Please complete Facebook login.";
+                    loginStatus.textContent = "Facebook OAuth tab opened. Please log in, copy the redirect URL from the address bar, and paste it below.";
                 } else {
                     loginStatus.textContent = `Error: ${data.error || 'Failed to start Facebook auth'}`;
                 }
@@ -592,4 +592,45 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ====================================================
+    // Login Help & Extraction Guide Accordion
+    // ====================================================
+    const btnHelpToggle = document.getElementById('btn-login-help-toggle');
+    const helpContainer = document.getElementById('login-help-container');
+
+    if (btnHelpToggle && helpContainer) {
+        btnHelpToggle.addEventListener('click', () => {
+            const isHidden = helpContainer.style.display === 'none';
+            helpContainer.style.display = isHidden ? 'block' : 'none';
+            btnHelpToggle.classList.toggle('active', isHidden);
+        });
+    }
+
+    // Accordion Items
+    const setupAccordionItem = (btnId, contentId) => {
+        const btn = document.getElementById(btnId);
+        const content = document.getElementById(contentId);
+        if (btn && content) {
+            btn.addEventListener('click', () => {
+                const isHidden = content.style.display === 'none';
+                
+                // Hide all other contents
+                document.querySelectorAll('.accordion-content').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.accordion-header').forEach(el => {
+                    el.classList.remove('active');
+                });
+
+                // Toggle current
+                content.style.display = isHidden ? 'block' : 'none';
+                btn.classList.toggle('active', isHidden);
+            });
+        }
+    };
+
+    setupAccordionItem('acc-fb-btn', 'acc-fb-content');
+    setupAccordionItem('acc-devtools-btn', 'acc-devtools-content');
+    setupAccordionItem('acc-cli-btn', 'acc-cli-content');
 });

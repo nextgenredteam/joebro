@@ -6,11 +6,13 @@
  | |_| | (_) |  __/ |_) | | | (_) | 
   \___/ \___/ \___|____/|_|  \___/  
 ```
-**A Unified Framework to Reclaim and Control the Sobro Smart Coffee Table**
+**A Unified Open-Source Framework to Fix the Sobro App Crash and Reclaim Your Sobro Smart Coffee Table**
 
-This repository contains the source code, reverse-engineered research, provisioning scripts, and offline mock infrastructure to rescue the **Sobro Smart Coffee Table** (formerly manufactured by StoreBound, now abandoned) and migrate it to the open-source **JoeBro Stack**.
+If your **official Sobro App** keeps crashing, failing to open, or is completely broken on modern iOS or Android devices, you are not alone. StoreBound has abandoned the official app, turning an expensive **Sobro Smart Table** into a disconnected brick. 
 
-The official Sobro mobile app is abandoned and crashes on modern Android and iOS devices. Because the table's local network communication protocol uses proprietary device-specific AES encryption, direct local network communication is locked out. This project bypasses the broken official app by communicating directly with the Ayla Networks Cloud API using a standalone, client-side **Progressive Web App (PWA)**, and provides a local mock server to future-proof the table against cloud shutdowns.
+This repository contains the **JoeBro IoT Rescue Stack**—a comprehensive solution to restore full functionality to your **Sobro Smart Coffee Table**. By reverse-engineering the Ayla Networks cloud API, this project bypasses the crashing official app, enabling you to control your table through a lightweight Progressive Web App (PWA) or migrate to a fully offline local server.
+
+Read the full reverse-engineering and recovery guide on the [NextGenRedTeam Blog: Rescuing Abandoned IoT (JoeBro Sobro Table Rescue)](https://nextgenredteam.com/blog/rescuing-abandoned-iot-joebro-sobro.html).
 
 ---
 
@@ -138,18 +140,50 @@ curl -X POST \
 
 ---
 
-## 🕵️ Bypassing Login via Cloud Auth Token Sniffing
+## 🕵️ Bypassing Login via Cloud Auth Token Sniffing & API Tricks
 
-If you do not want to enter your Ayla username and password into the JoeBro login page, you can intercept the active session token from your smartphone while using the official app:
+If you do not want to enter your email and password directly into the JoeBro PWA interface, or if your Ayla/Sobro account uses Facebook Login, you can use these alternative login tricks. The JoeBro PWA also provides a built-in step-by-step **Help Guide** directly on the login overlay.
 
-### HTTP Toolkit (Desktop Proxy)
+### Method 1: Facebook Redirect URL Trick (OAuth Bypass)
+Because the custom client runs under different domains or local filesystems, browser cross-origin limits prevent the client from reading Facebook's callback URL.
+1. Click **Login with Facebook** in the JoeBro login overlay.
+2. A new browser tab opens to Facebook's authentication page. Complete your login.
+3. The page will redirect to an Ayla web landing page containing the OAuth code (e.g. starting with `https://mobile.aylanetworks.com/?code=...`).
+4. Copy the entire URL from the browser's address bar.
+5. Paste it into the Facebook Redirect URL input in JoeBro and click **Complete Login**.
+
+### Method 2: Generate Token via API Command Line (CLI Trick)
+You can retrieve your Ayla access token by querying their auth API directly from your computer's terminal:
+
+#### PowerShell (Windows):
+```powershell
+$body = @{ user = @{ email = 'YOUR_EMAIL'; password = 'YOUR_PASSWORD'; application = @{ app_id = 'sobro-ag-id'; app_secret = 'sobro-mDM8M4JEe7IJFwiKvbs956XqX_s' } } }
+$res = Invoke-RestMethod -Uri "https://user-field.aylanetworks.com/users/sign_in.json" -Method Post -Body ($body | ConvertTo-Json) -ContentType "application/json"
+$res.access_token
+```
+
+#### curl (macOS / Linux / WSL):
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"user":{"email":"YOUR_EMAIL","password":"YOUR_PASSWORD","application":{"app_id":"sobro-ag-id","app_secret":"sobro-mDM8M4JEe7IJFwiKvbs956XqX_s"}}}' https://user-field.aylanetworks.com/users/sign_in.json | grep -o '"access_token":"[^"]*' | grep -o '[^"]*$'
+```
+*Run the command, copy the output token, click **Use Existing Auth Token** in the JoeBro PWA, paste it, and authenticate.*
+
+### Method 3: Browser Developer Tools (No Tools Required)
+1. Log in to Ayla's official platform (dashboard or user portal) in your web browser.
+2. Press `F12` (or right-click -> **Inspect**) and navigate to the **Network** tab.
+3. Reload the page or navigate to trigger API traffic.
+4. Search/filter the requests list for `aylanetworks` or `devices.json`.
+5. Select a request, inspect **Request Headers**, and find:
+   `Authorization: auth_token MC1_...`
+6. Copy the token string following `auth_token ` and use it in JoeBro's token login.
+
+### Method 4: Intercepting App Traffic (HTTP Toolkit)
 1. Run [HTTP Toolkit](https://httptoolkit.com/) on your computer.
-2. Configure your mobile phone's Wi-Fi network proxy to route through your computer's IP address and port `8000`. Install the HTTP Toolkit CA SSL Certificate on your phone.
+2. Route your smartphone's Wi-Fi traffic through your computer's IP address on port `8000`. Install the HTTP Toolkit CA SSL Certificate on your phone.
 3. Open the official **Sobro** app on your phone.
-4. Filter HTTP Toolkit traffic for requests containing `aylanetworks.com`.
+4. Filter HTTP Toolkit requests for `aylanetworks.com`.
 5. Open any request to `https://ads-field.aylanetworks.com/apiv1/devices.json` and inspect the headers.
-6. Copy the token string following `Authorization: auth_token ` (e.g., `MC1_8f0e0d0c...`).
-7. In the JoeBro login interface, click **Use Existing Auth Token**, paste the token, and authenticate.
+6. Copy the token string following `Authorization: auth_token ` (e.g., `MC1_8f0e0d0c...`) and paste it into the PWA.
 
 ---
 
