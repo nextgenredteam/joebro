@@ -23,6 +23,7 @@ The official Sobro mobile app is abandoned and crashes on modern Android and iOS
   - [provision.ps1](file:///f:/OneDrive/SoBroExploit/tools/joebro/provision.ps1) - Automated 2-step setup script (Windows)
   - [provision.sh](file:///f:/OneDrive/SoBroExploit/tools/joebro/provision.sh) - Step 1 provisioning script (Mac/Linux)
 - `mock-api/` - Docker-based local server infrastructure to replace Ayla Cloud for offline control
+  - [Dockerfile](file:///f:/OneDrive/SoBroExploit/mock-api/Dockerfile) - Self-contained server and PWA build definition
   - [server.js](file:///f:/OneDrive/SoBroExploit/mock-api/server.js) - Mock Express.js API matching real Ayla endpoints
   - [docker-compose.yml](file:///f:/OneDrive/SoBroExploit/mock-api/docker-compose.yml) - Local Pi-hole and Node API stack
 - `AylaConnector.ps1` - Helper script to push Wi-Fi credentials to the table
@@ -68,6 +69,11 @@ The internal Wi-Fi microcontroller on the Sobro table is legacy hardware and has
 
 If you change your Wi-Fi credentials or get a new table, you must provision it to your network. Because the official app is broken, use the following procedure:
 
+> [!WARNING]
+> **Host OS Execution Required:** You MUST run these provisioning scripts directly on your host computer (Windows/Mac/Linux), NOT inside Docker. Docker containers cannot access your host's physical Wi-Fi network card to join the table's hotspot.
+>
+> **Temporary Internet Disconnection:** Connecting to the table's Wi-Fi hotspot will temporarily disconnect your computer from your home Wi-Fi and the internet. All internet requests will fail during this period. The scripts are built to handle this seamlessly by pausing when Wi-Fi needs to be switched back.
+
 ### 1. Enter AP Mode
 - Press and hold the physical power button on the back/underside of the Sobro table until the table beeps and the front sensor lights flash.
 - The table will now broadcast an unsecured Wi-Fi hotspot named **`Sobro_XXXX`** (where `XXXX` represents part of the MAC address).
@@ -76,20 +82,23 @@ If you change your Wi-Fi credentials or get a new table, you must provision it t
 - Open your computer's Wi-Fi menu and connect directly to the **`Sobro_XXXX`** network. (It is unsecured, so no password is required).
 
 ### 3. Run the Provisioning Script
-Navigate to the repository folder and run the provisioning script:
+Navigate to the repository folder and run the provisioning script on your host system:
 
 #### Windows PowerShell:
 ```powershell
 .\tools\joebro\provision.ps1
 ```
-*(The script will guide you through entering your home Wi-Fi SSID, Password, and your Ayla Cloud account email/password. It will automatically handle Step 1 Wi-Fi connection and Step 2 Cloud binding).*
+* **One-Shot Handshake Flow:** The script will ask for your home Wi-Fi and Ayla credentials. 
+* **Step 1 (Offline):** It will push the Wi-Fi credentials to the table. The table will beep, shutdown its hotspot, and connect to your home network.
+* **Pause (Re-connect):** The script will pause and prompt you: *"Please connect your computer BACK to your home Wi-Fi network ($ssid) so we can reach the Internet."*
+* **Step 2 (Online):** Once you connect your PC back to home Wi-Fi (restoring internet access) and press Enter, the script automatically resumes, authenticates with Ayla Cloud, and binds the table to your account.
 
 #### Mac / Linux Bash:
 ```bash
 chmod +x ./tools/joebro/provision.sh
 ./tools/joebro/provision.sh
 ```
-*(The bash script handles Step 1 Wi-Fi credentials injection. Once the table connects, you must perform Step 2 Cloud binding manually or via the JoeBro dashboard).*
+* **Step 1 (Offline):** The bash script injects your home Wi-Fi credentials into the table. Once it completes and the table beeps, you must manually reconnect your computer back to your home Wi-Fi, open the JoeBro Web Controller in your browser, and bind the table (Step 2) via the dashboard UI.
 
 #### Fallback Manual Injection (Web Browser):
 If scripts are blocked, you can send the parameters manually:
@@ -103,6 +112,7 @@ If scripts are blocked, you can send the parameters manually:
    http://192.168.0.1/wifi_connect.json?ssid=YOUR_HOME_SSID&key=YOUR_HOME_PASSWORD&setup_token=YOUR_TOKEN
    ```
 3. The table will beep and reboot to join your network.
+4. Reconnect your computer to your home Wi-Fi to restore internet, open the JoeBro UI, and bind the token.
 
 ---
 
@@ -187,25 +197,24 @@ function unpackRgb(modeStatusInt) {
 }
 ```
 
----
-
 ## 🌐 Offline Future-Proofing: Local Mock API
 
-If Ayla Networks ever shuts down their servers, the Sobro table will lose all cloud connectivity. To future-proof the table, the `mock-api` directory contains a Node.js server that replicates Ayla's APIs locally.
+If Ayla Networks ever shuts down their servers, the Sobro table will lose all cloud connectivity. To future-proof the table, the `mock-api` directory contains a Node.js server that replicates Ayla's APIs locally and automatically hosts the JoeBro Web Controller static PWA.
 
 ### How to Run:
 1. Navigate to the `mock-api/` directory:
    ```bash
    cd mock-api
    ```
-2. Start the DNS sinkhole (Pi-hole) and mock API server:
+2. Build and start the DNS sinkhole (Pi-hole) and mock API server:
    ```bash
-   docker-compose up -d
+   docker-compose up --build -d
    ```
-3. Configure your local network router or DNS server to redirect requests for Ayla's domains to your local Docker host IP:
+   *(The `--build` flag builds our custom Dockerfile, compiling the mock backend server and bundling the JoeBro static PWA files inside the container).*
+3. Configure your local network router or DNS server (like Pi-hole) to redirect requests for Ayla's domains to your local Docker host IP:
    - `user-field.aylanetworks.com` -> `YOUR_DOCKER_HOST_IP`
    - `ads-field.aylanetworks.com` -> `YOUR_DOCKER_HOST_IP`
-4. The local Express server will listen on HTTPS port `443` and return the exact JSON payloads the table expects, redirecting all commands offline.
+4. The local server will listen on HTTPS port `443` and fallback HTTP port `8080`, rendering the JoeBro PWA at `http://localhost:8080` (or `https://localhost` if you have local SSL certs).
 
 *Note: In production or exposed environments, you should change the default Pi-hole web dashboard password (`WEBPASSWORD: "joebro_admin"`) inside `docker-compose.yml` to a secure value.*
 

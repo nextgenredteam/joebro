@@ -24,12 +24,11 @@ services:
   # 2. The Mock API Server
   # Emulates the Ayla Cloud HTTP JSON responses
   joebro-api:
-    image: node:18-alpine
+    build:
+      context: ..
+      dockerfile: mock-api/Dockerfile
     container_name: joebro-mock-api
-    working_dir: /usr/src/app
     ports:
       - "443:443"
-    volumes:
-      - ./:/usr/src/app
-    command: npm start
+      - "8080:8080"
     restart: unless-stopped
