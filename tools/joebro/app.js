@@ -634,3 +634,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAccordionItem('acc-devtools-btn', 'acc-devtools-content');
     setupAccordionItem('acc-cli-btn', 'acc-cli-content');
 });
+
+// Register Service Worker for PWA offline capabilities
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('Service Worker registered:', reg.scope))
+            .catch(err => console.error('Service Worker registration failed:', err));
+    });
+}
