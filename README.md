@@ -1,4 +1,5 @@
 # JoeBro & Sobro IoT Rescue Stack
+
 ```
       _            ____             
      | | ___   ___| __ ) _ __ ___   
@@ -6,6 +7,7 @@
  | |_| | (_) |  __/ |_) | | | (_) | 
   \___/ \___/ \___|____/|_|  \___/  
 ```
+
 **A Unified Open-Source Framework to Fix the Sobro App Crash and Reclaim Your Sobro Smart Coffee Table**
 
 If your **official Sobro App** keeps crashing, failing to open, or is completely broken on modern iOS or Android devices, you are not alone. StoreBound has abandoned the official app, turning an expensive **Sobro Smart Table** into a disconnected brick. 
@@ -13,6 +15,35 @@ If your **official Sobro App** keeps crashing, failing to open, or is completely
 This repository contains the **JoeBro IoT Rescue Stack**—a comprehensive solution to restore full functionality to your **Sobro Smart Coffee Table**. By reverse-engineering the Ayla Networks cloud API, this project bypasses the crashing official app, enabling you to control your table through a lightweight Progressive Web App (PWA) or migrate to a fully offline local server.
 
 Read the full reverse-engineering and recovery guide on the [NextGenRedTeam Blog: Rescuing Abandoned IoT (JoeBro Sobro Table Rescue)](https://nextgenredteam.com/blog/rescuing-abandoned-iot-joebro-sobro.html).
+
+---
+
+## 📸 JoeBro PWA Controller Preview
+
+![JoeBro PWA Dashboard](https://raw.githubusercontent.com/nextgenredteam/joebro/main/tools/joebro/screenshot.png)
+
+---
+
+## ⚡ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Mode_1["Mode 1: Cloud Control (Ayla Networks)"]
+        A["JoeBro PWA Client"] -->|HTTP REST| B["Ayla Networks Cloud API"]
+        B -->|Cloud MQTT/REST| C["Sobro Smart Table"]
+    end
+
+    subgraph Mode_2["Mode 2: Offline Control (Mock Local Server)"]
+        D["JoeBro PWA Client"] -->|Spoofed DNS| E["Mock API Server (Node.js Docker)"]
+        C -->|Spoofed DNS| E
+        E -->|Local Broadcast| C
+    end
+
+    subgraph Provisioning["Provisioning (AP Mode)"]
+        F["Local PC"] -->|Local Connection (192.168.0.1)| G["Sobro AP (Sobro_XXXX)"]
+        F -->|Injects Wi-Fi & Setup Token| G
+    end
+```
 
 ---
 
@@ -35,26 +66,12 @@ Read the full reverse-engineering and recovery guide on the [NextGenRedTeam Blog
 
 ---
 
-## ⚡ System Architecture
+## ⚡ Project & PWA Features
 
-```mermaid
-flowchart TD
-    subgraph Mode 1: Cloud Control (Ayla Networks)
-        A[JoeBro PWA client] -- HTTP REST --> B[Ayla Networks Cloud API]
-        B -- Cloud MQTT/REST Connection --> C[Sobro Smart Table]
-    end
-
-    subgraph Mode 2: Offline Control (Mock Local Server)
-        D[JoeBro PWA client] -- Spoofed DNS --> E[Mock API Server - Node.js Docker]
-        C -- Spoofed DNS --> E
-        E -- Local Broadcast --> C
-    end
-
-    subgraph Provisioning (AP Mode)
-        F[Local PC] -- Local 192.168.0.1 Connection --> G[Sobro AP: Sobro_XXXX]
-        F -- Injects Wi-Fi & Setup Token --> G
-    end
-```
+- **Zero Backend Required**: Operates 100% in your browser. No Docker, no Python, no local servers required for cloud control.
+- **Real-Time Responsiveness**: Employs a custom API throttler to safely allow real-time color and brightness dragging without hitting API rate limits.
+- **Mobile First Design**: Built with responsive CSS, touch-action protections, and PWA capabilities for a native mobile experience.
+- **Hidden Features Unlocked**: Access to undocumented capabilities like forcing Bluetooth speaker pairing mode and fine-tuning backlight brightness.
 
 ---
 
@@ -187,6 +204,31 @@ curl -X POST -H "Content-Type: application/json" -d '{"user":{"email":"YOUR_EMAI
 
 ---
 
+## 📊 Ayla Cloud API Architecture
+
+To bypass the broken mobile app, the JoeBro PWA communicates directly with the Ayla Cloud using the following REST endpoints:
+
+1. **Authentication:**
+   - `POST https://user-field.aylanetworks.com/users/sign_in.json`
+   - Payload: Email, Password, App ID, App Secret
+   - Returns: A 12-hour `access_token` required for all subsequent calls.
+
+2. **Device Discovery:**
+   - `GET https://ads-field.aylanetworks.com/apiv1/devices.json`
+   - Headers: `Authorization: auth_token <token>`
+   - Returns: A list of hardware devices bound to the user's account, including their unique `dsn` (Device Serial Number).
+
+3. **State Synchronization:**
+   - `GET https://ads-field.aylanetworks.com/apiv1/dsns/<dsn>/properties.json`
+   - Returns: A massive JSON array containing the current live state of every hardware component on the table.
+
+4. **Command Execution:**
+   - `POST https://ads-field.aylanetworks.com/apiv1/dsns/<dsn>/properties/<property_name>/datapoints.json`
+   - Payload: `{"datapoint": {"value": <data>}}`
+   - Pushes a new state value to the table. Returns `201 Created` on success.
+
+---
+
 ## 📊 Reverse-Engineered Property Map (Ayla Registers)
 
 The JoeBro app controls the table's hardware features by sending values to specific registers (properties) on Ayla's servers:
@@ -231,6 +273,8 @@ function unpackRgb(modeStatusInt) {
 }
 ```
 
+---
+
 ## 🌐 Offline Future-Proofing: Local Mock API
 
 If Ayla Networks ever shuts down their servers, the Sobro table will lose all cloud connectivity. To future-proof the table, the `mock-api` directory contains a Node.js server that replicates Ayla's APIs locally and automatically hosts the JoeBro Web Controller static PWA.
@@ -249,8 +293,6 @@ If Ayla Networks ever shuts down their servers, the Sobro table will lose all cl
    - `user-field.aylanetworks.com` -> `YOUR_DOCKER_HOST_IP`
    - `ads-field.aylanetworks.com` -> `YOUR_DOCKER_HOST_IP`
 4. The local server will listen on HTTPS port `443` and fallback HTTP port `8080`, rendering the JoeBro PWA at `http://localhost:8080` (or `https://localhost` if you have local SSL certs).
-
-*Note: In production or exposed environments, you should change the default Pi-hole web dashboard password (`WEBPASSWORD: "joebro_admin"`) inside `docker-compose.yml` to a secure value.*
 
 ---
 
@@ -284,4 +326,5 @@ The NextGenRedTeam website and JoeBro PWA are built as standard static files wit
 ---
 
 ## 📄 License
+
 This project is licensed under the MIT License. Contributions to expand offline firmware capability are welcome.
