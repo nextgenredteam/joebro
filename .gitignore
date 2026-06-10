@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Sub-tool secrets & configs
+tools/joebro/.env
+tools/joebro/config.json
+
+# Large Assets / Firmware / Decompiled
+*.apk
+*.zip
+*.jar
+*.idsig
+dumps/
+decompiled/
+apktool_out/
+pihole/
+jadx/
+uber-apk-signer.jar
+.git_backup/

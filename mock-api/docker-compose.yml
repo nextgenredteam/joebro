@@ -1,0 +1,35 @@
+version: '3'
+
+# JoeBro Local Rescue Infrastructure
+# Run this via `docker-compose up -d` if Ayla Networks ever shuts down.
+
+services:
+  # 1. The DNS Sinkhole
+  # Intercepts requests to aylainetworks.com and routes them to our local api
+  pihole:
+    image: pihole/pihole:latest
+    container_name: joebro-pihole
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    environment:
+      TZ: "America/New_York"
+      WEBPASSWORD: "joebro_admin"
+    volumes:
+      - './pihole/etc-pihole:/etc/pihole'
+      - './pihole/etc-dnsmasq.d:/etc/dnsmasq.d'
+    # TODO: Add custom DNSmasq config to route user-field.aylanetworks.com to the api container's IP
+    restart: unless-stopped
+
+  # 2. The Mock API Server
+  # Emulates the Ayla Cloud HTTP JSON responses
+  joebro-api:
+    image: node:18-alpine
+    container_name: joebro-mock-api
+    working_dir: /usr/src/app
+    ports:
+      - "443:443"
+    volumes:
+      - ./:/usr/src/app
+    command: npm start
+    restart: unless-stopped

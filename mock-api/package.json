@@ -1,0 +1,14 @@
+{
+  "name": "joebro-mock-api",
+  "version": "1.0.0",
+  "description": "Mock API server and secure proxy gateway for JoeBro Smart Table controller",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "author": "Joe B. The Blind Hacker",
+  "license": "ISC"
+}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="JoeBro Web Controller - A powerful, open-source Progressive Web App for controlling your smart table.">
+    <meta name="keywords" content="JoeBro, Sobro, smart table, controller, PWA, IoT">
+    <meta name="author" content="Joe B. The Blind Hacker">
+    <title>JoeBro Web Controller</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box card">
+            <img src="logo.png" alt="JoeBro Logo" class="login-logo">
+            <h2>JoeBro Cloud Login</h2>
+            <p>Sign in to connect directly to the table via the internet.</p>
+            
+            <div id="login-form">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="email@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="Password">
+                </div>
+                <button id="btn-login" class="btn">Login</button>
+                <div class="divider">OR</div>
+                <button id="btn-facebook" class="btn btn-facebook">Login with Facebook</button>
+                <div class="divider">OR</div>
+                <button id="btn-token-login-toggle" class="btn btn-secondary">Use Existing Auth Token</button>
+            </div>
+
+            <!-- Facebook Verification Code Input Container (Initially Hidden) -->
+            <div id="facebook-code-container" style="display: none; margin-top: 1rem;">
+                <p class="fb-instructions">Log in in the popup window. When finished, copy the code or the full redirect URL from the address bar and paste it below:</p>
+                <div class="input-group">
+                    <label>Facebook Code / Redirect URL</label>
+                    <input type="text" id="fb-code-input" placeholder="Paste code=... or full URL here">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                    <button id="btn-facebook-cancel" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                    <button id="btn-facebook-submit" class="btn" style="flex: 1;">Complete Login</button>
+                </div>
+            </div>
+
+            <!-- Token Login Container (Initially Hidden) -->
+            <div id="token-login-container" style="display: none; margin-top: 1rem;">
+                <p class="fb-instructions">If you intercepted your Ayla auth token (e.g. from mobile app traffic), paste it directly below to authenticate:</p>
+                <div class="input-group">
+                    <label>Ayla Auth Token</label>
+                    <input type="text" id="token-login-input" placeholder="Paste auth_token value here">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                    <button id="btn-token-cancel" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                    <button id="btn-token-submit" class="btn" style="flex: 1;">Authenticate</button>
+                </div>
+            </div>
+
+            <p id="login-status" class="status" style="margin-top: 1rem;"></p>
+        </div>
+    </div>
+
+    <div class="dashboard-container" id="dashboard" style="display: none;">
+        <header>
+            <div class="header-brand">
+                <img src="logo.png" alt="JoeBro Logo" class="header-logo">
+                <h1>JoeBro Controller</h1>
+            </div>
+            <div class="device-selector">
+                <select id="table-select">
+                    <option value="">No tables found</option>
+                </select>
+                <button id="btn-rename" class="btn btn-secondary">✏️ Rename</button>
+                <button id="btn-add-table" class="btn btn-secondary">➕ Bind Table</button>
+                <button id="btn-refresh" class="btn">↻ Refresh</button>
+            </div>
+            <p class="status" id="dashboard-status">Connected to Ayla Cloud.</p>
+        </header>
+        
+        <main class="grid">
+            
+            <!-- Fridge Card -->
+            <div class="card interactive" id="card-fridge">
+                <div class="card-header">
+                    <div class="card-icon">❄️</div>
+                    <div class="card-content">
+                        <h2>Cooling Drawer</h2>
+                        <p>Mini fridge compressor</p>
+                    </div>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="toggle-fridge">
+                        <label for="toggle-fridge"></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Locks Card -->
+            <div class="card interactive" id="card-locks">
+                <div class="card-header">
+                    <div class="card-icon">🔒</div>
+                    <div class="card-content">
+                        <h2>Drawer Locks</h2>
+                        <p>Electronic lock mechanisms</p>
+                    </div>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="toggle-lock">
+                        <label for="toggle-lock"></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Front Light Card -->
+            <div class="card interactive" id="card-front-light">
+                <div class="card-header">
+                    <div class="card-icon">💡</div>
+                    <div class="card-content">
+                        <h2>Front Light</h2>
+                        <p>Motion sensor LED strip</p>
+                    </div>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="toggle-front-light">
+                        <label for="toggle-front-light"></label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="slider-container">
+                        <label>Temperature <span><span id="temp-val">4000K</span></span></label>
+                        <input type="range" id="temp-slider" min="2000" max="6500" value="4000">
+                    </div>
+                    <div class="slider-container">
+                        <label>Duration <span><span id="duration-val">50</span>s</span></label>
+                        <input type="range" id="duration-slider" min="0" max="255" value="50">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Light Card -->
+            <div class="card interactive" id="card-back-light">
+                <div class="card-header">
+                    <div class="card-icon">✨</div>
+                    <div class="card-content">
+                        <h2>Back Light</h2>
+                        <p>LED Accent Lighting</p>
+                    </div>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="toggle-back-light">
+                        <label for="toggle-back-light"></label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="slider-container">
+                        <label>Brightness <span><span id="brightness-val">50%</span></span></label>
+                        <input type="range" id="brightness-slider" min="0" max="100" value="50">
+                    </div>
+                    <div class="slider-container">
+                        <label>Color</label>
+                        <input type="color" id="rgb-picker" value="#00ffff">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Card -->
+            <div class="card interactive" id="card-audio">
+                <div class="card-header">
+                    <div class="card-icon">🎵</div>
+                    <div class="card-content">
+                        <h2>Bluetooth Audio</h2>
+                        <p>Force pairing mode for speakers</p>
+                    </div>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="toggle-ble">
+                        <label for="toggle-ble"></label>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- Add Device / Bind Table Modal -->
+    <div id="add-table-modal" class="login-overlay" style="display: none;">
+        <div class="login-box card">
+            <h2>Bind Sobro Smart Table</h2>
+            <p style="margin-bottom: 1.5rem;">Enter the registration token (from regtoken.json or fallback setup token) to bind it to your account.</p>
+            <div class="input-group" style="text-align: left; margin-bottom: 1rem;">
+                <label>Registration Token / Setup Token</label>
+                <input type="text" id="reg-token-input" placeholder="e.g. 12345678">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                <button id="btn-add-table-cancel" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+                <button id="btn-add-table-submit" class="btn" style="flex: 1;">Register Device</button>
+            </div>
+            <p id="add-table-status" class="status" style="margin-top: 1rem;"></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

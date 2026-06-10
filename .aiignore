@@ -1,0 +1,20 @@
+# Exclude credentials
+.env
+*.env
+config.json
+tools/joebro/config.json
+tools/joebro/.env
+
+# Large Assets / Firmware / Decompiled
+*.apk
+*.zip
+*.jar
+*.idsig
+dumps/
+decompiled/
+apktool_out/
+pihole/
+jadx/
+uber-apk-signer.jar
+node_modules/
+.git_backup/
